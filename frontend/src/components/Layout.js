@@ -58,7 +58,7 @@ export const Layout = ({ children }) => {
               <Mic2 className="h-5 w-5" />
             </span>
             <span className="font-display text-lg font-bold tracking-tight sm:text-xl">
-              <span className="text-primary">Nagami</span>
+              karaoke <span className="text-primary">Nagami</span>
             </span>
           </NavLink>
 

@@ -49,13 +49,13 @@ export default function PlayerPage() {
   const errorCooldownRef = useRef(false);
   const failedRef = useRef(new Set());
   const volumeRef = useRef(80);
-  const localMutedRef = useRef(false);
+  const localMutedRef = useRef(true);
 
   const [localTime, setLocalTime] = useState(0);
   const [localDuration, setLocalDuration] = useState(0);
   const [volume, setVolume] = useState(80);
   const [fullscreen, setFullscreen] = useState(false);
-  const [localMuted, setLocalMuted] = useState(false);
+  const [localMuted, setLocalMuted] = useState(true);
   const [queueOpen, setQueueOpen] = useState(false);
 
   useEffect(() => {
@@ -186,6 +186,9 @@ export default function PlayerPage() {
         events: {
           onReady: () => {
             setReady(true);
+            try {
+              if (localMutedRef.current) playerRef.current?.mute?.();
+            } catch (e) {}
           },
           onStateChange: (event) => {
             if (event.data === window.YT.PlayerState.ENDED) {
