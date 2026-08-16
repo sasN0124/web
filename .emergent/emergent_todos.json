@@ -1,0 +1,34 @@
+[
+  {
+    "content": "Phase 1 POC: YouTube search proxy - DONE",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 POC: Firebase RTDB real-time playlist - DONE",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 POC: YouTube IFrame Player loads; playback blocked by sandbox network filter (real users OK)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2: Full app built - Search, Playlist, Player pages",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2: Roles + guard + reload persistence - DONE",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2: Non-destructive skip for unavailable videos - DONE",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2: End-to-End testing (backend 5/5, frontend 24/24, 100%) - DONE",
+    "status": "completed"
+  },
+  {
+    "content": "User to verify real video playback from their own device",
+    "status": "completed"
+  }
+]
