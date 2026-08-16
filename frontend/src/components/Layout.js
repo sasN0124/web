@@ -73,7 +73,7 @@ export const Layout = ({ children }) => {
               data-testid="role-badge"
             >
               {isAdmin ? <ShieldCheck className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
-              {isAdmin ? "Administrador" : "DJ"}
+              {isAdmin ? "Admin" : "DJ"}
             </Badge>
 
             {isAdmin ? (
