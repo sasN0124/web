@@ -58,7 +58,7 @@ export const Layout = ({ children }) => {
               <Mic2 className="h-5 w-5" />
             </span>
             <span className="font-display text-lg font-bold tracking-tight sm:text-xl">
-              Karaoke <span className="text-primary">Compartido</span>
+              <span className="text-primary">Nagami</span>
             </span>
           </NavLink>
 
@@ -73,7 +73,7 @@ export const Layout = ({ children }) => {
               data-testid="role-badge"
             >
               {isAdmin ? <ShieldCheck className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
-              {isAdmin ? "Admin" : "Usuario"}
+              {isAdmin ? "DJ" : "Usuario"}
             </Badge>
 
             {isAdmin ? (
