@@ -38,6 +38,7 @@ export default function PlayerPage() {
   const { state } = usePlayerState();
 
   const playerRef = useRef(null);
+  const containerRef = useRef(null);
   const [ready, setReady] = useState(false);
 
   const remoteRef = useRef(null);
@@ -48,12 +49,88 @@ export default function PlayerPage() {
   const errorCooldownRef = useRef(false);
   const failedRef = useRef(new Set());
   const volumeRef = useRef(80);
+  const localMutedRef = useRef(false);
 
   const [localTime, setLocalTime] = useState(0);
   const [localDuration, setLocalDuration] = useState(0);
   const [volume, setVolume] = useState(80);
   const [fullscreen, setFullscreen] = useState(false);
+  const [localMuted, setLocalMuted] = useState(false);
   const [queueOpen, setQueueOpen] = useState(false);
+
+  useEffect(() => {
+    localMutedRef.current = localMuted;
+  }, [localMuted]);
+
+  // ---- Real browser Fullscreen API sync ----
+  useEffect(() => {
+    const onFsChange = () => {
+      const fsEl =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement;
+      setFullscreen(!!fsEl);
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("MSFullscreenChange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("MSFullscreenChange", onFsChange);
+    };
+  }, []);
+
+  const requestFullscreen = () => {
+    const el = containerRef.current;
+    if (!el) {
+      setFullscreen(true);
+      return;
+    }
+    const req =
+      el.requestFullscreen ||
+      el.webkitRequestFullscreen ||
+      el.msRequestFullscreen;
+    if (req) {
+      try {
+        const p = req.call(el);
+        if (p && p.catch) p.catch(() => setFullscreen(true));
+      } catch (e) {
+        setFullscreen(true);
+      }
+    } else {
+      // fallback: CSS overlay
+      setFullscreen(true);
+    }
+  };
+
+  const exitFullscreen = () => {
+    const fsEl =
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.msFullscreenElement;
+    if (fsEl) {
+      const ex =
+        document.exitFullscreen ||
+        document.webkitExitFullscreen ||
+        document.msExitFullscreen;
+      try {
+        ex.call(document);
+      } catch (e) {}
+    } else {
+      setFullscreen(false);
+    }
+  };
+
+  const toggleMuteLocal = () => {
+    const yt = playerRef.current;
+    const next = !localMuted;
+    setLocalMuted(next);
+    try {
+      if (next) yt?.mute?.();
+      else yt?.unMute?.();
+    } catch (e) {}
+  };
 
   useEffect(() => {
     remoteRef.current = state;
@@ -224,6 +301,12 @@ export default function PlayerPage() {
       setVolume(state.volume);
     }
 
+    // keep LOCAL mute independent of shared volume/state
+    try {
+      if (localMutedRef.current) yt.mute();
+      else yt.unMute();
+    } catch (e) {}
+
     const desired = state.current_video_id || "";
 
     if (desired && loadedVideoRef.current !== desired) {
@@ -272,6 +355,10 @@ export default function PlayerPage() {
         // a video that plays past 1s is definitely available
         if (t > 1 && loadedVideoRef.current) {
           failedRef.current.delete(loadedVideoRef.current);
+        }
+        // enforce local mute (survives new video loads)
+        if (localMutedRef.current && yt.isMuted && !yt.isMuted()) {
+          yt.mute();
         }
       } catch (e) {}
     }, 500);
@@ -384,7 +471,7 @@ export default function PlayerPage() {
       } catch (e) {}
       push({ is_playing: true });
     }
-    setFullscreen(true);
+    requestFullscreen();
   };
 
   const QueueList = () => (
@@ -430,6 +517,7 @@ export default function PlayerPage() {
           {/* Video area */}
           <div>
             <div
+              ref={containerRef}
               className={
                 fullscreen
                   ? "fixed inset-0 z-[60] bg-black"
@@ -447,17 +535,32 @@ export default function PlayerPage() {
               </div>
 
               {fullscreen ? (
-                <Button
-                  onClick={() => setFullscreen(false)}
-                  className="absolute left-4 top-4 z-[61] gap-2"
-                  variant="secondary"
-                  data-testid="player-fullscreen-exit-button"
-                >
-                  <Minimize className="h-4 w-4" /> Salir
-                </Button>
+                <div className="absolute left-4 top-4 z-[61] flex gap-2">
+                  <Button
+                    onClick={exitFullscreen}
+                    className="gap-2"
+                    variant="secondary"
+                    data-testid="player-fullscreen-exit-button"
+                  >
+                    <Minimize className="h-4 w-4" /> Salir
+                  </Button>
+                  <Button
+                    onClick={toggleMuteLocal}
+                    size="icon"
+                    variant="secondary"
+                    aria-label={localMuted ? "Quitar silencio (local)" : "Silenciar (local)"}
+                    data-testid="player-fullscreen-mute-button"
+                  >
+                    {localMuted ? (
+                      <VolumeX className="h-4 w-4" />
+                    ) : (
+                      <Volume2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               ) : (
                 <Button
-                  onClick={() => setFullscreen(true)}
+                  onClick={requestFullscreen}
                   size="icon"
                   variant="secondary"
                   className="absolute right-3 top-3"
@@ -569,12 +672,22 @@ export default function PlayerPage() {
               </span>
             </div>
 
-            <div className="flex w-28 items-center gap-2 sm:w-40">
-              {volume === 0 ? (
-                <VolumeX className="h-4 w-4 shrink-0 text-muted-foreground" />
-              ) : (
-                <Volume2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
+            <div className="flex w-32 items-center gap-2 sm:w-48">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={toggleMuteLocal}
+                aria-label={localMuted ? "Quitar silencio (local)" : "Silenciar (local)"}
+                title={localMuted ? "Silenciado solo en tu dispositivo" : "Silenciar solo en tu dispositivo"}
+                data-testid="player-controls-mute-button"
+                className="shrink-0"
+              >
+                {localMuted || volume === 0 ? (
+                  <VolumeX className={`h-4 w-4 ${localMuted ? "text-primary" : "text-muted-foreground"}`} />
+                ) : (
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
               <Slider
                 min={0}
                 max={100}
